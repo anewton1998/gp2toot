@@ -1,3 +1,4 @@
+# Copyright (C) 2019 Andrew Newton
 require 'logger'
 require 'pp'
 require 'json'

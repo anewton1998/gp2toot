@@ -14,6 +14,8 @@
 # -c f, --config f:
 #    configuration file
 
+# Copyright (C) 2019 Andrew Newton
+
 my_bin    = File.dirname(__FILE__)
 my_lib    = my_bin + '/../lib'
 my_etc    = my_bin + '/../etc'

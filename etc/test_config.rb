@@ -1,3 +1,4 @@
+# Copyright (C) 2019 Andrew Newton
 Gp2Toot.configure do |config|
 
   # file in var directory to write
