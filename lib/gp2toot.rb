@@ -27,6 +27,8 @@ module Gp2Toot
     attr_accessor :takeoutDir
     attr_accessor :visibility
     attr_accessor :timeFormat
+    attr_accessor :limit
+    attr_accessor :throttle
 
     def initialize
       @baseUrl = 'https://masto.rootdc.xyz'
@@ -34,6 +36,8 @@ module Gp2Toot
       @directory = File.dirname( __FILE__ )
       @visibility = 'unlisted'
       @timeFormat = "[ originally posted on G+ on %b %-d, %Y, %k:%M ]"
+      @limit = -1 #unlimited
+      @throttle = 2
     end
   end
 
@@ -95,6 +99,7 @@ module Gp2Toot
     def postStatuses( stream )
         posts = stream + '/Posts'
         statusAry = []
+        i = 1
         Dir.glob( posts + '/*.json' ) do |rb_file|
           @logger.debug( "found #{rb_file}" )
           content,photo,creationTime = postData( rb_file )
@@ -107,8 +112,11 @@ module Gp2Toot
 
           params = { :visibility => @configuration.visibility }
           status = @mastodon.create_status( content + "\n" + appendText, params )
+          sleep( @configuration.throttle )
           statusAry << status
-          @logger.debug( "posted status #{status.id}")
+          i = i + 1
+          @logger.info( "posted status #{i} with id #{status.id}")
+          break if @configuration.limit > 0 && i > @configuration.limit
         end
         writeStatusIds( statusAry )
     end
@@ -141,7 +149,7 @@ module Gp2Toot
           @logger.debug( "deleting post #{id}")
           @mastodon.destroy_status( id )
           # we gotta do this otherwise we get throttled
-          sleep( 1 )
+          sleep( @configuration.throttle )
         end
       end
     end

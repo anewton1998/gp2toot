@@ -29,4 +29,15 @@ Gp2Toot.configure do |config|
   # https://ruby-doc.org/stdlib-2.3.1/libdoc/date/rdoc/Date.html#method-i-strftime
   config.timeFormat = "[ originally posted on G+ on %b %-d, %Y, %k:%M ]"
 
+  # limits the number of status and media to upload
+  # this is useful for testing as you don't want to be deleting large numbers of
+  # status and media
+  # comment this out when it is time to do it for real
+  config.limit = 2
+
+  # throttle in seconds
+  # play nice with the instance... this specifies the number of seconds to wait before
+  # making another request
+  #config.throttle = 2
+
 end
