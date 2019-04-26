@@ -65,14 +65,34 @@ module Gp2Toot
 
     end
     
-    def run
-      mastodon = Mastodon::REST::Client.new( base_url: @configuration.baseUrl, bearer_token: @configuration.bearerToken );
+    def run( action )
+      raise ArgumentError unless action
+
+      @mastodon = Mastodon::REST::Client.new( base_url: @configuration.baseUrl, bearer_token: @configuration.bearerToken );
 
       begin
 
         @logger.info( "Crawling #{@configuration.takeoutDir}" )
         stream = @configuration.takeoutDir + '/Google+ Stream'
 
+        case action
+        when :post
+          @logger.info( "posting statuses" )
+          postStatuses( stream )
+        when :deletePosts
+          @logger.info( "deleting past statuses" )
+          deletePosts
+        else
+          raise ArgumentError( "unknown action" )
+        end
+
+      rescue Interrupt => e
+        @logger.info("interrupt received")
+      end
+
+    end
+
+    def postStatuses( stream )
         posts = stream + '/Posts'
         statusAry = []
         Dir.glob( posts + '/*.json' ) do |rb_file|
@@ -86,16 +106,11 @@ module Gp2Toot
           @logger.debug( "append text is #{appendText}")
 
           params = { :visibility => @configuration.visibility }
-          status = mastodon.create_status( content + "\n" + appendText, params )
+          status = @mastodon.create_status( content + "\n" + appendText, params )
           statusAry << status
           @logger.debug( "posted status #{status.id}")
         end
         writeStatusIds( statusAry )
-
-      rescue Interrupt => e
-        @logger.info("interrupt received")
-      end
-
     end
 
     def postData( post )
@@ -118,6 +133,17 @@ module Gp2Toot
         f.write( "\n" )
       end
       f.close
+    end
+
+    def deletePosts
+      Dir.glob( @varDir + '/posts-*' ) do |postIds|
+        File.readlines( postIds).each do |id|
+          @logger.debug( "deleting post #{id}")
+          @mastodon.destroy_status( id )
+          # we gotta do this otherwise we get throttled
+          sleep( 1 )
+        end
+      end
     end
 
   end

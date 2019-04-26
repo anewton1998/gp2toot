@@ -26,8 +26,11 @@ require 'getoptlong'
 
 opts = GetoptLong.new(
   [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
-  [ '--config', '-c', GetoptLong::REQUIRED_ARGUMENT ]
+  [ '--config', '-c', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--delete-posts', '-P', GetoptLong::NO_ARGUMENT ]
 )
+
+action = :post
 
 opts.each do |opt, arg|
   case opt
@@ -41,11 +44,13 @@ opts.each do |opt, arg|
     else
       require my_etc + '/' + arg
     end
+  when '--delete-posts'
+    action = :deletePosts
   else
     puts "error: unexpected input, try --help"
     exit 1
   end
 end
 
-Gp2Toot::Gp2Toot.new( Gp2Toot.configuration ).run
+Gp2Toot::Gp2Toot.new( Gp2Toot.configuration ).run( action )
 
