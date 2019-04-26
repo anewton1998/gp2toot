@@ -22,6 +22,7 @@ module Gp2Toot
     attr_accessor :loggerLevel
     attr_accessor :directory
     attr_accessor :acct
+    attr_accessor :takeoutDir
 
     def initialize
       @baseUrl = 'https://masto.rootdc.xyz'
@@ -39,6 +40,7 @@ module Gp2Toot
       if @configuration.loggerOut == 'console'
         @logger = Logger.new( STDOUT ) if @configuration.loggerOut == 'console'
       else
+        Dir.mkdir( @varDir ) unless File.exists?( @varDir )
         @logger = Logger.new( @varDir + @configuration.loggerOut )
       end
       
@@ -53,7 +55,7 @@ module Gp2Toot
         @logger.level=Logger::INFO
       end
       
-      @logger.info( "Looking through Takeout" )
+      @logger.debug( "Configuration looks good." )
 
     end
     
@@ -62,70 +64,10 @@ module Gp2Toot
 
       begin
 
-        loop do
-
-          if @configuration.chatEnabled
-            @chatIntervalCount = @chatIntervalCount + 1
-            if @chatIntervalCount == @configuration.chatInterval
-              chat( mastodon )
-              @chatIntervalCount = 0
-            end
-          end
-
-          if @configuration.followEnabled
-            @followIntervalCount = @followIntervalCount + 1
-            if @followIntervalCount == @configuration.followInterval
-              follow( mastodon )
-              @followIntervalCount = 0
-            end
-          end
-
-          if @configuration.tagChatEnabled
-            @tagChatIntervalCount = @tagChatIntervalCount + 1
-            if @tagChatIntervalCount == @configuration.tagChatInterval
-              tagChat( mastodon )
-              @tagChatIntervalCount = 0
-            end
-          end
-
-          sleep 1
-
-        end
+        @logger.info( "Crawling #{@configuration.takeoutDir}" )
 
       rescue Interrupt => e
         @logger.info("interrupt received")
-      end
-
-    end
-
-    def chat( mastodon )
-
-      if @sinceId
-        @logger.info "fetching statuses since #{@sinceId}"
-        toots = mastodon.home_timeline(since_id: @sinceId)
-      else
-        @logger.info "fetching last 25 statuses"
-        toots = mastodon.home_timeline(limit: 25)
-      end
-
-      toots.each do |toot|
-        @logger.debug("examining status #{toot.id}")
-        if @sinceId == nil
-          @sinceId = toot.id.to_i
-        elsif @sinceId < toot.id.to_i
-          @sinceId = toot.id.to_i
-        end
-        toot.mentions.each do |mention|
-          if mention.acct == @configuration.acct
-            @logger.debug("mentioned in status #{toot.id}")
-            content = toot.content.gsub( %r{</?[^>]+?>} , '')
-            content.gsub!( %r{@\w+}, '' )
-            @logger.info( "#{toot.account.acct} :: #{content}" )
-            reply = @eliza.processInput( content )
-            @logger.info( "#{@configuration.acct} :: #{reply}" )
-            mastodon.create_status( reply, toot.id )
-          end
-        end
       end
 
     end
