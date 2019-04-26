@@ -37,7 +37,7 @@ bundler install
 
 ## How to Use
 
-In the `/etc` directory, there is a `test_config.rb` file. Edit the file with your parameters.
+In the `/etc` directory, there is a `sample_config.rb` file. Copy the file to a name of your desire (e.g. `my_config.rb`) and edit it with your parameters.
 
 To get the access token (bearer token), you should go into your Mastodon settings -> development. Once there, create a new application. Once created, view it and get the access token.
 

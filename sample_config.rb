@@ -11,10 +11,10 @@ Gp2Toot.configure do |config|
   config.loggerLevel = 'debug'
 
   # the access token
-  config.bearerToken = '7800b44816efe3aba9ed232264b42b0c832f3c70ae7146e03aba271db40e61f8'
+  config.bearerToken = '8800b44816efe3aba9ed232264b42b0c832f3c70ae7146e03aba271db40e61f7'
 
   # the account name
-  config.acct = 'gp2toot'
+  config.acct = 'test_gp2toot'
 
   # the URL of the Mastodon Instance
   config.baseUrl = 'https://masto.rootdc.xyz'
