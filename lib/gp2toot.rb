@@ -44,6 +44,14 @@ module Gp2Toot
     end
   end
 
+  class GplusPost
+    attr_accessor :content
+    attr_accessor :creationTime
+    attr_accessor :localFilePath
+    attr_accessor :linkUrl
+    attr_accessor :mediaUrl
+  end
+
   class Gp2Toot
     
     def initialize( configuration )
@@ -109,16 +117,14 @@ module Gp2Toot
       i = 1
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
-        content,photo,creationTime = postData( rb_file )
-        @logger.debug( "content #{content}")
-        @logger.debug( "photo #{photo}")
-        @logger.debug( "creation time #{creationTime}")
-        date = DateTime.parse( creationTime )
+        gpp = postData( rb_file )
+        @logger.debug( "gpp is #{gpp}")
+        date = DateTime.parse( gpp.creationTime )
         appendText = date.strftime(@configuration.timeFormat)
         @logger.debug( "append text is #{appendText}")
 
         params = { :visibility => @configuration.visibility, :created_at => date }
-        status = throttle{ @mastodon.create_status( content + "\n" + appendText, params ) }
+        status = throttle{ @mastodon.create_status( gpp.content + "\n" + appendText, params ) }
         statusAry << status
         @logger.info( "posted status #{i} with id #{status.id}")
         i = i + 1
@@ -132,11 +138,18 @@ module Gp2Toot
       t = f.read
       f.close
       j = JSON.parse( t )
-      content = j[ "content" ]
-      photo = nil
-      photo = j[ "link" ][ "imageUrl" ] if j[ "link" ] and j[ "link" ][ "imageUrl" ]
-      creationTime = j[ "creationTime" ]
-      return content, photo, creationTime
+      gpp = GplusPost.new
+      gpp.creationTime = j[ "creationTime" ]
+      gpp.content = j[ "content" ]
+      link = j[ "link" ]
+      if link = j[ "link" ]
+        gpp.linkUrl = link[ "imageUrl" ]
+      end
+      if media = j[ "media" ]
+        gpp.localFilePath = media[ "localFilePath" ]
+        gpp.mediaUrl = media[ "url" ]
+      end
+      gpp
     end
 
     def writeStatusIds( statusAry )
@@ -185,17 +198,32 @@ module Gp2Toot
       posts = stream + '/Posts'
       numPosts = 0
       numExeedingLength = 0
-      numWithPhoto = 0
+      numPostsWithoutContent = 0
+      maxContentLength = 0
+      numPostsWithLink = 0
+      numPostsWithMediaLink = 0
+      numPostsWithLocalMedia = 0
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
-        content,photo,creationTime = postData( rb_file )
+        gpp = postData( rb_file )
         numPosts += 1
-        numExeedingLength += 1 if content && content.length > @configuration.maxLength
-        numWithPhoto += 1 if photo
+        if gpp.content
+          numExeedingLength += 1 if gpp.content.length > @configuration.maxLength
+          maxContentLength = gpp.content.length if gpp.content.length > maxContentLength
+        else
+          numPostsWithoutContent += 1
+        end
+        numPostsWithLink += 1 if gpp.linkUrl
+        numPostsWithMediaLink += 1 if gpp.mediaUrl
+        numPostsWithLocalMedia += 1 if gpp.localFilePath
       end
       @logger.info( "Number of posts: #{numPosts}" )
       @logger.info( "Number of posts exceeding #{@configuration.maxLength} character limit: #{numExeedingLength}" )
-      @logger.info( "Number of posts with photo links: #{numWithPhoto}" )      
+      @logger.info( "Maximum post length found: #{maxContentLength}" )
+      @logger.info( "Number of posts with no content: #{numPostsWithoutContent}" )
+      @logger.info( "Number of posts with a link: #{numPostsWithLink}" )
+      @logger.info( "Number of posts with media link: #{numPostsWithMediaLink}" )
+      @logger.info( "Number of posts with local media: #{numPostsWithLocalMedia}")
     end 
 
   end #end class gp2toot
