@@ -15,9 +15,14 @@ Needs to do
 
 * Dealing with media (photos) comes next
 * Doing something about status character limits.
-* Gracefully deal with throttling. `Mastodon::Error::TooManyRequests: Throttled`
+* Find a way to actually backdate posts. See https://github.com/tootsuite/mastodon/issues/10639
 
 *I NEED YOUR HELP* The Takeout corpus I have does not have any correlated G+ posts with G+ photos. If you have information on how this information is related, I would be very grateful to be informed.
+
+## Changelog
+
+* Hopefully added more graceful throttling.
+* Added --delete-posts=last and --delete-posts=all logic
 
 ## Prerequisites
 
@@ -57,6 +62,12 @@ To have the program attempt to delete its posts, you can pass the `--delete-post
 
 ~~~
 bundler exec bin/gp2toot.rb -c test_config.rb --delete-posts
+~~~
+
+By default, it will attempt to delete the posts from the last run. If you want it to delete all posts from all previous runs, use the `all` argument.
+
+~~~
+bundler exec bin/gp2toot.rb -c test_config.rb --delete-posts=all
 ~~~
 
 ## How to Provide Feedback

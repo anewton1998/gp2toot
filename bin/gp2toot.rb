@@ -29,10 +29,11 @@ require 'getoptlong'
 opts = GetoptLong.new(
   [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
   [ '--config', '-c', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--delete-posts', '-P', GetoptLong::NO_ARGUMENT ]
+  [ '--delete-posts', '-P', GetoptLong::OPTIONAL_ARGUMENT ]
 )
 
 action = :post
+params = {}
 
 opts.each do |opt, arg|
   case opt
@@ -48,11 +49,21 @@ opts.each do |opt, arg|
     end
   when '--delete-posts'
     action = :deletePosts
+    case arg
+    when ''
+      params[ :deletePosts ] = :last
+    when 'all'
+      params[ :deletePosts ] = :all
+    when 'last'
+      params[ :deletePosts ] = :last
+    else
+      raise ArgumentError( "--delete-posts argument #{arg} is not understood" )
+    end
   else
     puts "error: unexpected input, try --help"
     exit 1
   end
 end
 
-Gp2Toot::Gp2Toot.new( Gp2Toot.configuration ).run( action )
+Gp2Toot::Gp2Toot.new( Gp2Toot.configuration ).run( action, params )
 

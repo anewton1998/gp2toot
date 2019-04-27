@@ -47,6 +47,7 @@ module Gp2Toot
     def initialize( configuration )
       @configuration = configuration
       @varDir = @configuration.directory + '/../var/'
+      @current_throttle = @configuration.throttle
 
       if @configuration.loggerOut == 'console'
         @logger = Logger.new( STDOUT ) if @configuration.loggerOut == 'console'
@@ -70,7 +71,7 @@ module Gp2Toot
 
     end
     
-    def run( action )
+    def run( action, params )
       raise ArgumentError unless action
 
       @mastodon = Mastodon::REST::Client.new( base_url: @configuration.baseUrl, bearer_token: @configuration.bearerToken );
@@ -86,7 +87,7 @@ module Gp2Toot
           postStatuses( stream )
         when :deletePosts
           @logger.info( "deleting past statuses" )
-          deletePosts
+          deletePosts( params )
         else
           raise ArgumentError( "unknown action" )
         end
@@ -111,12 +112,11 @@ module Gp2Toot
           appendText = date.strftime(@configuration.timeFormat)
           @logger.debug( "append text is #{appendText}")
 
-          params = { :visibility => @configuration.visibility }
-          status = @mastodon.create_status( content + "\n" + appendText, params )
-          sleep( @configuration.throttle )
+          params = { :visibility => @configuration.visibility, :created_at => date }
+          status = throttle{ @mastodon.create_status( content + "\n" + appendText, params ) }
           statusAry << status
-          i = i + 1
           @logger.info( "posted status #{i} with id #{status.id}")
+          i = i + 1
           break if @configuration.limit > 0 && i > @configuration.limit
         end
         writeStatusIds( statusAry )
@@ -144,15 +144,37 @@ module Gp2Toot
       f.close
     end
 
-    def deletePosts
-      Dir.glob( @varDir + '/posts-*' ) do |postIds|
-        File.readlines( postIds).each do |id|
-          @logger.debug( "deleting post #{id}")
-          @mastodon.destroy_status( id )
-          # we gotta do this otherwise we get throttled
-          sleep( @configuration.throttle )
+    def deletePosts( params )
+      case params[ :deletePosts ]
+      when :all
+        Dir.glob( @varDir + '/posts-*' ) do |postIds|
+          deletePostIds( postIds )
         end
+      when :last
+        postIds = Dir.glob( @varDir + '/posts-*' ).max_by {|f| File.mtime(f) }
+        deletePostIds( postIds )
       end
+    end
+
+    def deletePostIds( postIds )
+      @logger.debug( "reading postIds from #{postIds}" )
+      File.readlines( postIds ).each do |id|
+        @logger.info( "deleting post #{id}")
+        throttle{ @mastodon.destroy_status( id ) }
+      end
+    end
+
+    def throttle( &block )
+      begin
+        retval = yield
+        sleep( @current_throttle )
+        retval
+      rescue Mastodon::Error::TooManyRequests => e
+        @logger.warn( "throttled... backing off: #{e}" )
+        @current_throttle = @current_throttle + 1
+        throttle( &block )
+      end
+
     end
 
   end
