@@ -30,6 +30,7 @@ module Gp2Toot
     attr_accessor :timeFormat
     attr_accessor :limit
     attr_accessor :throttle
+    attr_accessor :maxLength
 
     def initialize
       @baseUrl = 'https://masto.rootdc.xyz'
@@ -39,6 +40,7 @@ module Gp2Toot
       @timeFormat = "[ originally posted on G+ on %b %-d, %Y, %k:%M ]"
       @limit = -1 #unlimited
       @throttle = 2
+      @maxLength = 500
     end
   end
 
@@ -88,6 +90,9 @@ module Gp2Toot
         when :deletePosts
           @logger.info( "deleting past statuses" )
           deletePosts( params )
+        when :analyze
+          @logger.info( "doing analysis" )
+          analyze( stream )
         else
           raise ArgumentError( "unknown action" )
         end
@@ -99,27 +104,27 @@ module Gp2Toot
     end
 
     def postStatuses( stream )
-        posts = stream + '/Posts'
-        statusAry = []
-        i = 1
-        Dir.glob( posts + '/*.json' ) do |rb_file|
-          @logger.debug( "found #{rb_file}" )
-          content,photo,creationTime = postData( rb_file )
-          @logger.debug( "content #{content}")
-          @logger.debug( "photo #{photo}")
-          @logger.debug( "creation time #{creationTime}")
-          date = DateTime.parse( creationTime )
-          appendText = date.strftime(@configuration.timeFormat)
-          @logger.debug( "append text is #{appendText}")
+      posts = stream + '/Posts'
+      statusAry = []
+      i = 1
+      Dir.glob( posts + '/*.json' ) do |rb_file|
+        @logger.debug( "found #{rb_file}" )
+        content,photo,creationTime = postData( rb_file )
+        @logger.debug( "content #{content}")
+        @logger.debug( "photo #{photo}")
+        @logger.debug( "creation time #{creationTime}")
+        date = DateTime.parse( creationTime )
+        appendText = date.strftime(@configuration.timeFormat)
+        @logger.debug( "append text is #{appendText}")
 
-          params = { :visibility => @configuration.visibility, :created_at => date }
-          status = throttle{ @mastodon.create_status( content + "\n" + appendText, params ) }
-          statusAry << status
-          @logger.info( "posted status #{i} with id #{status.id}")
-          i = i + 1
-          break if @configuration.limit > 0 && i > @configuration.limit
-        end
-        writeStatusIds( statusAry )
+        params = { :visibility => @configuration.visibility, :created_at => date }
+        status = throttle{ @mastodon.create_status( content + "\n" + appendText, params ) }
+        statusAry << status
+        @logger.info( "posted status #{i} with id #{status.id}")
+        i = i + 1
+        break if @configuration.limit > 0 && i > @configuration.limit
+      end
+      writeStatusIds( statusAry )
     end
 
     def postData( post )
@@ -174,9 +179,25 @@ module Gp2Toot
         @current_throttle = @current_throttle + 1
         throttle( &block )
       end
-
     end
 
-  end
+    def analyze( stream )
+      posts = stream + '/Posts'
+      numPosts = 0
+      numExeedingLength = 0
+      numWithPhoto = 0
+      Dir.glob( posts + '/*.json' ) do |rb_file|
+        @logger.debug( "found #{rb_file}" )
+        content,photo,creationTime = postData( rb_file )
+        numPosts += 1
+        numExeedingLength += 1 if content && content.length > @configuration.maxLength
+        numWithPhoto += 1 if photo
+      end
+      @logger.info( "Number of posts: #{numPosts}" )
+      @logger.info( "Number of posts exceeding #{@configuration.maxLength} character limit: #{numExeedingLength}" )
+      @logger.info( "Number of posts with photo links: #{numWithPhoto}" )      
+    end 
 
-end
+  end #end class gp2toot
+
+end #end module

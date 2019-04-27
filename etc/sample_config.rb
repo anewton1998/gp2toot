@@ -41,4 +41,8 @@ Gp2Toot.configure do |config|
   # making another request
   #config.throttle = 2
 
+  # The maximum length of a Mastodon status. The default for most instances is 500 characters.
+  # However, some instances have higher limits. You'll need to check with the instance operator.
+  #config.maxLength = 500
+
 end

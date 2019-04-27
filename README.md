@@ -53,7 +53,7 @@ The `config.throttle` value is important as Mastodon will start throttling you. 
 To migrate the G+ posts, execute with bundler like so:
 
 ~~~
-bundler exec bin/gp2toot.rb -c test_config.rb
+bundler exec bin/gp2toot.rb -c test_config.rb -p
 ~~~
 
 Be default, a log file is kept in `var` and along with files containing the post IDs of posts that have been submitted.
