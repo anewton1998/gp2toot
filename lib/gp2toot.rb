@@ -152,6 +152,13 @@ module Gp2Toot
       gpp
     end
 
+    def splitPostContent( content )
+      retval = []
+      if content.length > @configuration.maxLength
+      end
+      retval
+    end
+
     def writeStatusIds( statusAry )
       now = DateTime.now()
       f = File.open( @varDir + '/posts-' + now.iso8601(), 'w' )
