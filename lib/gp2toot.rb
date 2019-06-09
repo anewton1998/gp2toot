@@ -154,7 +154,30 @@ module Gp2Toot
 
     def splitPostContent( content )
       retval = []
-      if content.length > @configuration.maxLength
+      if content.length <= @configuration.maxLength
+        retval << content
+      else
+        splitLength = @configuration.maxLength - 8 # - " (xx/yy)"
+        ninetyPer = splitLength * 0.9
+        cCount = 1
+        split = ""
+        content.each_char do |char|
+          if ( cCount >= ninetyPer && ( char == '.' || char =~ /\s/ ) ) || cCount == splitLength
+            split += char if char =~ /\S/
+            retval << split
+            split = ""
+            cCount = 1
+          else
+            split += char
+            cCount += 1
+          end
+        end
+        retval << split if split != ""
+        sCount = 0
+        retval.map! do |split|
+          sCount += 1
+          split + " (#{sCount}/#{retval.size})"
+        end
       end
       retval
     end
