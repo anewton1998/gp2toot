@@ -45,4 +45,13 @@ Gp2Toot.configure do |config|
   # However, some instances have higher limits. You'll need to check with the instance operator.
   #config.maxLength = 500
 
+  # Provided for testing purposes. When set to true, this will only convert posts from G+
+  # that exceed the Mastodon status length (see config.maxLength ). Each post exceeding the
+  # status length is broken into multiple Mastodon statuses as a thread.
+  #config.onlyOverLength = false
+
+  # Provided for testing purposes. When set to true, this will only take posts with media
+  # and send them to Mastodon.
+  #config.onlyWithMedia = false
+
 end

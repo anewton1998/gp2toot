@@ -31,6 +31,8 @@ module Gp2Toot
     attr_accessor :limit
     attr_accessor :throttle
     attr_accessor :maxLength
+    attr_accessor :onlyOverLength
+    attr_accessor :onlyWithMedia
 
     def initialize
       @baseUrl = 'https://masto.rootdc.xyz'
@@ -123,10 +125,21 @@ module Gp2Toot
         appendText = date.strftime(@configuration.timeFormat)
         @logger.debug( "append text is #{appendText}")
 
+        # this returns an array, each item being one status update to Mastodon
+        content = splitPostContent( gpp.content + "\n" + appendText )
+        next if content.size == 1 && @configuration.onlyOverLength
+
+        # the parameters of the post
         params = { :visibility => @configuration.visibility, :created_at => date }
-        status = throttle{ @mastodon.create_status( gpp.content + "\n" + appendText, params ) }
-        statusAry << status
-        @logger.info( "posted status #{i} with id #{status.id}")
+
+        status = nil
+        content.each_with_index do |part,index|
+          params[ :in_reply_to_id ] = status.id if index > 0
+          status = throttle{ @mastodon.create_status( part, params ) }
+          statusAry << status
+          @logger.info( "posted status #{i}:#{index} with id #{status.id}")
+        end
+
         i = i + 1
         break if @configuration.limit > 0 && i > @configuration.limit
       end
