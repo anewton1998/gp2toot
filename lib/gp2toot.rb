@@ -4,7 +4,7 @@ require 'pp'
 require 'json'
 require 'date'
 require 'mastodon'
-
+require 'nokogiri'
 
 module Gp2Toot
 
@@ -165,6 +165,7 @@ module Gp2Toot
       gpp
     end
 
+
     def splitPostContent( content )
       retval = []
       if content.length <= @configuration.maxLength
@@ -270,5 +271,25 @@ module Gp2Toot
     end 
 
   end #end class gp2toot
+
+  #Helper function
+  def self.filterHTML( fragment )
+    retval = ""
+    nodeSet = Nokogiri::HTML.fragment( fragment )
+    content = ""
+    content += traverseNodeSet( nodeSet, content )
+    content
+  end
+
+  def self.traverseNodeSet( nodeset, content )
+    nodeset.children.each do |node|
+      if node.name == "a"
+        content += "#{node.content} (#{node['href']})"
+      else
+        content += node.content
+      end
+    end
+    content
+  end
 
 end #end module

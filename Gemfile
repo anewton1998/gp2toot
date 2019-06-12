@@ -2,6 +2,7 @@
 source 'https://rubygems.org'
 
 gem 'mastodon-api', require: 'mastodon'
+gem 'nokogiri', require: true
 gem 'rspec', :require => false, :group => :test
 gem 'coveralls', require: false
 gem 'rake', :require => false, :group => :test

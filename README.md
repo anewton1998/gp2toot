@@ -10,12 +10,14 @@ Current functionality
 * Can delete the posted statuses.
 * Also can limit the number of posts for testing purposes.
 * Has a throttle time because to be nice.
+* Will split posts and thread them if they exceed the Mastodon status character limit
 
 Needs to do
 
+* Dealing with HTML content
 * Dealing with media (photos) comes next
-* Doing something about status character limits.
 * Find a way to actually backdate posts. See https://github.com/tootsuite/mastodon/issues/10639
+* Test with posts with no content
 
 *I NEED YOUR HELP* The Takeout corpus I have does not have any correlated G+ posts with G+ photos. If you have information on how this information is related, I would be very grateful to be informed.
 
