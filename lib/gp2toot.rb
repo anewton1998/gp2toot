@@ -102,10 +102,10 @@ module Gp2Toot
 
         case action
         when :post
-          @logger.info( "posting statuses" )
+          @logger.info( "posting to mastodon" )
           postToMasto( stream )
         when :deletePosts
-          @logger.info( "deleting past statuses" )
+          @logger.info( "deleting from mastodon" )
           deleteFromMasto( params )
         when :analyze
           @logger.info( "doing analysis" )
@@ -122,11 +122,16 @@ module Gp2Toot
 
     def postToMasto( stream )
       posts = stream + '/Posts'
-      statusAry = []
+      mastoIdAry = []
+      gppUrlAry = []
+      writtenGppUrls = getWrittenGppUrls
+
       i = 1
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
         gpp = getGpp( rb_file )
+        @logger.debug( "read #{gpp.url}" )
+        next if writtenGppUrls.include?( gpp.url )
 
         # this returns an array, each item being one status update to Mastodon
         content = splitPostContent( Gp2Toot.transformContent( gpp, @configuration.timeFormat ) )
@@ -140,14 +145,17 @@ module Gp2Toot
         content.each_with_index do |part,index|
           params[ :in_reply_to_id ] = status.id if index > 0
           status = throttle{ @mastodon.create_status( part, params ) }
-          statusAry << status
+          mastoIdAry << "#{STATUS}=#{status.id}"
           @logger.info( "posted status #{i}:#{index} with id #{status.id}")
         end
+
+        gppUrlAry << "#{GPP_URL}=#{gpp.url}"
 
         i = i + 1
         break if @configuration.limit > 0 && i > @configuration.limit
       end
-      writeStatusIds( statusAry )
+      writeMastoIds( mastoIdAry )
+      writeGppUrls( gppUrlAry )
     end
 
     def getGpp( post )
@@ -201,14 +209,36 @@ module Gp2Toot
       retval
     end
 
-    def writeStatusIds( statusAry )
+    def writeMastoIds( statusAry )
       now = DateTime.now()
       f = File.open( "#{@varDir}/#{MASTO_POSTS}-#{now.iso8601()}", 'w' )
-      statusAry.each do |status|
-        f.write( "#{STATUS}=#{status.id}" )
+      statusAry.each do |item|
+        f.write( item )
         f.write( "\n" )
       end
       f.close
+    end
+
+    def writeGppUrls( gppUrlAry )
+      now = DateTime.now()
+      f = File.open( "#{@varDir}/#{GPP_POSTS}-#{now.iso8601()}", 'w' )
+      gppUrlAry.each do |item|
+        f.write( item )
+        f.write( "\n" )
+      end
+      f.close
+    end
+
+    def getWrittenGppUrls
+      writtenGppUrls = Set.new
+      Dir.glob( "#{@varDir}/#{GPP_POSTS}-*" ) do |gppUrls|
+        File.readlines( gppUrls ).each do |line|
+          url = line.strip.split('=')[1]
+          @logger.debug( "previously written G+ post #{url}")
+          writtenGppUrls << url
+        end
+      end
+      writtenGppUrls
     end
 
     def deleteFromMasto( params )
@@ -226,7 +256,7 @@ module Gp2Toot
     def deleteMastoIds( postIds )
       @logger.debug( "reading postIds from #{postIds}" )
       File.readlines( postIds ).each do |line|
-        id = line.split('=')[1]
+        id = line.strip.split('=')[1]
         @logger.info( "deleting post #{id}")
         throttle{ @mastodon.destroy_status( id ) }
       end

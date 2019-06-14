@@ -8,7 +8,7 @@ Gp2Toot.configure do |config|
   #config.loggerOut = 'console'
 
   # values are 'warn', 'info', and 'debug'
-  config.loggerLevel = 'debug'
+  config.loggerLevel = 'info'
 
   # the access token
   config.bearerToken = '8800b44816efe3aba9ed232264b42b0c832f3c70ae7146e03aba271db40e61f7'
