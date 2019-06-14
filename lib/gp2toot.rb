@@ -54,7 +54,7 @@ module Gp2Toot
     attr_accessor :mediaUrl
   end
 
-  class Gp2Toot
+  class Main
     
     def initialize( configuration )
       @configuration = configuration
@@ -121,12 +121,9 @@ module Gp2Toot
         @logger.debug( "found #{rb_file}" )
         gpp = postData( rb_file )
         @logger.debug( "gpp is #{gpp}")
-        date = DateTime.parse( gpp.creationTime )
-        appendText = date.strftime(@configuration.timeFormat)
-        @logger.debug( "append text is #{appendText}")
 
         # this returns an array, each item being one status update to Mastodon
-        content = splitPostContent( gpp.content + "\n" + appendText )
+        content = splitPostContent( Gp2Toot.transformContent( gpp, @configuration.timeFormat ) )
         next if content.size == 1 && @configuration.onlyOverLength
 
         # the parameters of the post
@@ -251,10 +248,11 @@ module Gp2Toot
         @logger.debug( "found #{rb_file}" )
         gpp = postData( rb_file )
         numPosts += 1
-        if gpp.content
-          numExeedingLength += 1 if gpp.content.length > @configuration.maxLength
-          maxContentLength = gpp.content.length if gpp.content.length > maxContentLength
-        else
+        content = Gp2Toot::transformContent( gpp, @configuration.timeFormat )
+        if content
+          numExeedingLength += 1 if content.length > @configuration.maxLength
+          maxContentLength = content.length if content.length > maxContentLength
+        elsif !gpp.content
           numPostsWithoutContent += 1
         end
         numPostsWithLink += 1 if gpp.linkUrl
@@ -285,10 +283,35 @@ module Gp2Toot
     nodeset.children.each do |node|
       if node.name == "a"
         content += "#{node.content} (#{node['href']})"
+      elsif node.name == "br"
+        content += "\n"
       else
         content += node.content
       end
     end
+    content
+  end
+
+  def self.appendText( time, format ) 
+    date = DateTime.parse( time )
+    date.strftime(format)
+  end
+
+  def self.transformContent( gpp, format )
+    content = ""
+
+    if gpp.content
+      content += filterHTML( gpp.content )
+    end
+
+    if gpp.linkUrl
+      content += "\n\n" + gpp.linkUrl
+    end
+
+    if format != ""
+      content += "\n\n" + appendText( gpp.creationTime, format )
+    end
+
     content
   end
 

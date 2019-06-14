@@ -20,7 +20,7 @@ describe 'filter html' do
     it 'should filter break' do
         frag = 'foo <br>bar'
         text = Gp2Toot.filterHTML( frag )
-        expect( text ).to eq( "foo bar" )
+        expect( text ).to eq( "foo \nbar" )
     end
 
     it 'should filter link' do

@@ -99,4 +99,4 @@ unless action
   exit( 1 )
 end
 
-Gp2Toot::Gp2Toot.new( Gp2Toot.configuration ).run( action, params )
+Gp2Toot::Main.new( Gp2Toot.configuration ).run( action, params )

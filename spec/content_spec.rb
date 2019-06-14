@@ -8,7 +8,7 @@ describe 'content handling' do
     it 'should not split content that is not over the max content length' do
         config = Gp2Toot::Configuration.new
         config.maxLength = 10
-        gp2toot = Gp2Toot::Gp2Toot.new( config )
+        gp2toot = Gp2Toot::Main.new( config )
         c = gp2toot.splitPostContent( "123456789" )
         expect( c.size ).to eq( 1 )
         expect( c[0] ).to eq( "123456789" )
@@ -17,7 +17,7 @@ describe 'content handling' do
     it 'should not split content that is the max content length' do
         config = Gp2Toot::Configuration.new
         config.maxLength = 10
-        gp2toot = Gp2Toot::Gp2Toot.new( config )
+        gp2toot = Gp2Toot::Main.new( config )
         c = gp2toot.splitPostContent( "1234567890" )
         expect( c.size ).to eq( 1 )
         expect( c[0] ).to eq( "1234567890" )
@@ -26,7 +26,7 @@ describe 'content handling' do
     it 'should spit without whitespace and period' do
         config = Gp2Toot::Configuration.new
         config.maxLength = 10
-        gp2toot = Gp2Toot::Gp2Toot.new( config )
+        gp2toot = Gp2Toot::Main.new( config )
         c = gp2toot.splitPostContent( "1234567890123" )
         expect( c.size ).to eq( 7 )
         expect( c[0] ).to eq( "12 (1/7)" )
@@ -38,7 +38,7 @@ describe 'content handling' do
     it 'should spit with whitespace' do
         config = Gp2Toot::Configuration.new
         config.maxLength = 20
-        gp2toot = Gp2Toot::Gp2Toot.new( config )
+        gp2toot = Gp2Toot::Main.new( config )
         c = gp2toot.splitPostContent( "12 34 56 78 90 12 34 56 78" )
         expect( c.size ).to eq( 3 )
         expect( c[0] ).to eq( "12 34 56 78 (1/3)" )
@@ -49,7 +49,7 @@ describe 'content handling' do
     it 'should spit with period' do
         config = Gp2Toot::Configuration.new
         config.maxLength = 20
-        gp2toot = Gp2Toot::Gp2Toot.new( config )
+        gp2toot = Gp2Toot::Main.new( config )
         c = gp2toot.splitPostContent( "12 34 56 78.90 12 34 56.78" )
         expect( c.size ).to eq( 3 )
         expect( c[0] ).to eq( "12 34 56 78. (1/3)" )
