@@ -10,6 +10,9 @@ module Gp2Toot
 
   MASTO_POSTS = "masto_posts"
   GPP_POSTS = "gpp_posts"
+  STATUS = "status"
+  MEDIA = "media"
+  GPP_URL = "gpp_url"
 
   class << self
     attr_accessor :configuration
@@ -200,7 +203,7 @@ module Gp2Toot
       now = DateTime.now()
       f = File.open( "#{@varDir}/#{MASTO_POSTS}-#{now.iso8601()}", 'w' )
       statusAry.each do |status|
-        f.write( status.id )
+        f.write( "#{STATUS}=#{status.id}" )
         f.write( "\n" )
       end
       f.close
@@ -220,7 +223,8 @@ module Gp2Toot
 
     def deletePostIds( postIds )
       @logger.debug( "reading postIds from #{postIds}" )
-      File.readlines( postIds ).each do |id|
+      File.readlines( postIds ).each do |line|
+        id = line.split('=')[1]
         @logger.info( "deleting post #{id}")
         throttle{ @mastodon.destroy_status( id ) }
       end
@@ -234,6 +238,8 @@ module Gp2Toot
       rescue Mastodon::Error::TooManyRequests => e
         @logger.warn( "throttled... backing off: #{e}" )
         @current_throttle = @current_throttle + 1
+        sleep( @current_throttle )
+        
         throttle( &block )
       end
     end
