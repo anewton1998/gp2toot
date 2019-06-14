@@ -53,6 +53,7 @@ module Gp2Toot
   end
 
   class GplusPost
+    attr_accessor :url
     attr_accessor :content
     attr_accessor :creationTime
     attr_accessor :localFilePath
@@ -102,10 +103,10 @@ module Gp2Toot
         case action
         when :post
           @logger.info( "posting statuses" )
-          postStatuses( stream )
+          postToMasto( stream )
         when :deletePosts
           @logger.info( "deleting past statuses" )
-          deletePosts( params )
+          deleteFromMasto( params )
         when :analyze
           @logger.info( "doing analysis" )
           analyze( stream )
@@ -119,13 +120,13 @@ module Gp2Toot
 
     end
 
-    def postStatuses( stream )
+    def postToMasto( stream )
       posts = stream + '/Posts'
       statusAry = []
       i = 1
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
-        gpp = postData( rb_file )
+        gpp = getGpp( rb_file )
 
         # this returns an array, each item being one status update to Mastodon
         content = splitPostContent( Gp2Toot.transformContent( gpp, @configuration.timeFormat ) )
@@ -149,12 +150,13 @@ module Gp2Toot
       writeStatusIds( statusAry )
     end
 
-    def postData( post )
+    def getGpp( post )
       f = File.open( post, 'r') 
       t = f.read
       f.close
       j = JSON.parse( t )
       gpp = GplusPost.new
+      gpp.url = j[ "url" ]
       gpp.creationTime = j[ "creationTime" ]
       gpp.content = j[ "content" ]
       link = j[ "link" ]
@@ -209,19 +211,19 @@ module Gp2Toot
       f.close
     end
 
-    def deletePosts( params )
+    def deleteFromMasto( params )
       case params[ :deletePosts ]
       when :all
         Dir.glob( "#{@varDir}/#{MASTO_POSTS}-*" ) do |postIds|
-          deletePostIds( postIds )
+          deleteMastoIds( postIds )
         end
       when :last
         postIds = Dir.glob( "#{@varDir}/#{MASTO_POSTS}-*" ).max_by {|f| File.mtime(f) }
-        deletePostIds( postIds )
+        deleteMastoIds( postIds )
       end
     end
 
-    def deletePostIds( postIds )
+    def deleteMastoIds( postIds )
       @logger.debug( "reading postIds from #{postIds}" )
       File.readlines( postIds ).each do |line|
         id = line.split('=')[1]
@@ -254,7 +256,7 @@ module Gp2Toot
       numPostsWithLocalMedia = 0
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
-        gpp = postData( rb_file )
+        gpp = getGpp( rb_file )
         numPosts += 1
         content = Gp2Toot::transformContent( gpp, @configuration.timeFormat )
         if content
