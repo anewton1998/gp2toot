@@ -8,6 +8,9 @@ require 'nokogiri'
 
 module Gp2Toot
 
+  MASTO_POSTS = "masto_posts"
+  GPP_POSTS = "gpp_posts"
+
   class << self
     attr_accessor :configuration
   end
@@ -195,7 +198,7 @@ module Gp2Toot
 
     def writeStatusIds( statusAry )
       now = DateTime.now()
-      f = File.open( @varDir + '/posts-' + now.iso8601(), 'w' )
+      f = File.open( "#{@varDir}/#{MASTO_POSTS}-#{now.iso8601()}", 'w' )
       statusAry.each do |status|
         f.write( status.id )
         f.write( "\n" )
@@ -206,11 +209,11 @@ module Gp2Toot
     def deletePosts( params )
       case params[ :deletePosts ]
       when :all
-        Dir.glob( @varDir + '/posts-*' ) do |postIds|
+        Dir.glob( "#{@varDir}/#{MASTO_POSTS}-*" ) do |postIds|
           deletePostIds( postIds )
         end
       when :last
-        postIds = Dir.glob( @varDir + '/posts-*' ).max_by {|f| File.mtime(f) }
+        postIds = Dir.glob( "#{@varDir}/#{MASTO_POSTS}-*" ).max_by {|f| File.mtime(f) }
         deletePostIds( postIds )
       end
     end
