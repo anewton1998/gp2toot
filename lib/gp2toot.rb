@@ -289,10 +289,10 @@ module Gp2Toot
         gpp = getGpp( rb_file )
         numPosts += 1
         content = Gp2Toot::transformContent( gpp, @configuration.timeFormat )
-        if content
+        if gpp.content
           numExeedingLength += 1 if content.length > @configuration.maxLength
           maxContentLength = content.length if content.length > maxContentLength
-        elsif !gpp.content
+        else
           numPostsWithoutContent += 1
         end
         numPostsWithLink += 1 if gpp.linkUrl
