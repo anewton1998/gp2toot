@@ -120,13 +120,13 @@ module Gp2Toot
       Dir.glob( posts + '/*.json' ) do |rb_file|
         @logger.debug( "found #{rb_file}" )
         gpp = postData( rb_file )
-        @logger.debug( "gpp is #{gpp}")
 
         # this returns an array, each item being one status update to Mastodon
         content = splitPostContent( Gp2Toot.transformContent( gpp, @configuration.timeFormat ) )
         next if content.size == 1 && @configuration.onlyOverLength
 
         # the parameters of the post
+        date = DateTime.parse( gpp.creationTime )
         params = { :visibility => @configuration.visibility, :created_at => date }
 
         status = nil
