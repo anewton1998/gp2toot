@@ -239,7 +239,6 @@ module Gp2Toot
         @logger.warn( "throttled... backing off: #{e}" )
         @current_throttle = @current_throttle + 1
         sleep( @current_throttle )
-        
         throttle( &block )
       end
     end
