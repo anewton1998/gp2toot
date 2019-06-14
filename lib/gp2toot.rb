@@ -348,6 +348,10 @@ module Gp2Toot
       content += "\n\n" + gpp.linkUrl
     end
 
+    if gpp.mediaUrl
+      content += "\n\n" + gpp.mediaUrl
+    end
+
     if format != ""
       content += "\n\n" + appendText( gpp.creationTime, format )
     end

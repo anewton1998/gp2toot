@@ -9,10 +9,11 @@ describe 'transform G+ content' do
         gpp = Gp2Toot::GplusPost.new
         gpp.content = "foo<br>thingy"
         gpp.linkUrl = "http://example.com"
+        gpp.mediaUrl = "http://example.net"
         format = "[ on G+ %b %-d, %Y, %k:%M ]"
         gpp.creationTime = "2019-01-13T22:30:33-0500"
         content = Gp2Toot.transformContent( gpp, format )
-        expect( content ).to eq( "foo\nthingy\n\nhttp://example.com\n\n[ on G+ Jan 13, 2019, 22:30 ]" )
+        expect( content ).to eq( "foo\nthingy\n\nhttp://example.com\n\nhttp://example.net\n\n[ on G+ Jan 13, 2019, 22:30 ]" )
     end
 
     it 'should filter no link' do
