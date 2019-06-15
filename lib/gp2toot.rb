@@ -137,9 +137,21 @@ module Gp2Toot
         content = splitPostContent( Gp2Toot.transformContent( gpp, @configuration.timeFormat ) )
         next if content.size == 1 && @configuration.onlyOverLength
 
+        # upload media
+        if gpp.localFilePath
+          media = throttle{ @mastodon.upload_media( "#{posts}/#{gpp.localFilePath}", {} )}
+          mastoIdAry << "#{MEDIA}=#{media.id}"
+          @logger.info( "posted media #{gpp.localFilePath} with id #{media.id}" )
+        elsif @configuration.onlyWithMedia
+          next    
+        end
+
         # the parameters of the post
         date = DateTime.parse( gpp.creationTime )
         params = { :visibility => @configuration.visibility, :created_at => date }
+        if media
+          params[ :media_ids ] = [ media.id ]
+        end
 
         status = nil
         content.each_with_index do |part,index|
@@ -256,9 +268,11 @@ module Gp2Toot
     def deleteMastoIds( postIds )
       @logger.debug( "reading postIds from #{postIds}" )
       File.readlines( postIds ).each do |line|
-        id = line.strip.split('=')[1]
-        @logger.info( "deleting post #{id}")
-        throttle{ @mastodon.destroy_status( id ) }
+        ids = line.strip.split('=')
+        if ids[ 0 ] == STATUS
+          @logger.info( "deleting status #{ids[ 1 ]}")
+          throttle{ @mastodon.destroy_status( ids[ 1 ] ) }
+        end
       end
     end
 
@@ -348,7 +362,7 @@ module Gp2Toot
       content += "\n\n" + gpp.linkUrl
     end
 
-    if gpp.mediaUrl
+    if gpp.mediaUrl && !gpp.localFilePath
       content += "\n\n" + gpp.mediaUrl
     end
 
